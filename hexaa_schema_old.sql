@@ -252,8 +252,11 @@ CREATE TABLE `invitation` (
   `service_id` bigint(20) DEFAULT NULL,
   `inviter_id` bigint(20) DEFAULT NULL,
   `emails` mediumtext COLLATE utf8_unicode_ci NOT NULL COMMENT '(DC2Type:array)',
+  `statuses` mediumtext COLLATE utf8_unicode_ci NOT NULL COMMENT '(DC2Type:array)',
+  `display_names` mediumtext COLLATE utf8_unicode_ci NOT NULL COMMENT '(DC2Type:array)',
   `token` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `landing_url` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `locale` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `do_redirect` tinyint(1) DEFAULT NULL,
   `as_manager` tinyint(1) DEFAULT NULL,
   `message` longtext COLLATE utf8_unicode_ci,
@@ -265,9 +268,6 @@ CREATE TABLE `invitation` (
   `last_reinvite_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
-  `statuses` mediumtext COLLATE utf8_unicode_ci NOT NULL COMMENT '(DC2Type:array)',
-  `display_names` mediumtext COLLATE utf8_unicode_ci NOT NULL COMMENT '(DC2Type:array)',
-  `locale` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `IDX_F11D61A2D60322AC` (`role_id`),
   KEY `IDX_F11D61A232C8A3DE` (`organization_id`),
@@ -278,6 +278,30 @@ CREATE TABLE `invitation` (
   CONSTRAINT `FK_F11D61A2D60322AC` FOREIGN KEY (`role_id`) REFERENCES `role` (`id`) ON DELETE CASCADE,
   CONSTRAINT `FK_F11D61A2ED5CA9E6` FOREIGN KEY (`service_id`) REFERENCES `service` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=2010 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `organization_entitlement_pack`
+--
+
+DROP TABLE IF EXISTS `organization_entitlement_pack`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `organization_entitlement_pack` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `organization_id` bigint(20) DEFAULT NULL,
+  `entitlement_pack_id` bigint(20) DEFAULT NULL,
+  `status` enum('accepted','pending') COLLATE utf8_unicode_ci DEFAULT NULL,
+  `updated_at` datetime NOT NULL,
+  `created_at` datetime NOT NULL,
+  `accept_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `organization_entitlement_pack` (`organization_id`,`entitlement_pack_id`),
+  KEY `IDX_B4280C3732C8A3DE` (`organization_id`),
+  KEY `IDX_B4280C3746D6DBD6` (`entitlement_pack_id`),
+  CONSTRAINT `FK_B4280C3732C8A3DE` FOREIGN KEY (`organization_id`) REFERENCES `organization` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `FK_B4280C3746D6DBD6` FOREIGN KEY (`entitlement_pack_id`) REFERENCES `entitlement_pack` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=773 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -321,9 +345,9 @@ CREATE TABLE `news` (
   `admin` tinyint(1) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `IDX_1DD39950474870EE` (`principal_id`),
+  KEY `tag_idx` (`tag`),
   KEY `IDX_1DD39950ED5CA9E6` (`service_id`),
   KEY `IDX_1DD3995032C8A3DE` (`organization_id`),
-  KEY `tag_idx` (`tag`),
   CONSTRAINT `FK_1DD3995032C8A3DE` FOREIGN KEY (`organization_id`) REFERENCES `organization` (`id`) ON DELETE CASCADE,
   CONSTRAINT `FK_1DD39950474870EE` FOREIGN KEY (`principal_id`) REFERENCES `principal` (`id`) ON DELETE CASCADE,
   CONSTRAINT `FK_1DD39950ED5CA9E6` FOREIGN KEY (`service_id`) REFERENCES `service` (`id`) ON DELETE CASCADE
@@ -340,42 +364,18 @@ DROP TABLE IF EXISTS `organization`;
 CREATE TABLE `organization` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `description` longtext COLLATE utf8_unicode_ci,
-  `default_role_id` bigint(20) DEFAULT NULL,
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   `isolate_members` tinyint(1) DEFAULT NULL,
   `isolate_role_members` tinyint(1) DEFAULT NULL,
   `url` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `description` longtext COLLATE utf8_unicode_ci,
+  `default_role_id` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`),
   UNIQUE KEY `UNIQ_C1EE637C248673E9` (`default_role_id`),
   CONSTRAINT `FK_C1EE637C248673E9` FOREIGN KEY (`default_role_id`) REFERENCES `role` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=695 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `organization_entitlement_pack`
---
-
-DROP TABLE IF EXISTS `organization_entitlement_pack`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `organization_entitlement_pack` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `organization_id` bigint(20) DEFAULT NULL,
-  `entitlement_pack_id` bigint(20) DEFAULT NULL,
-  `status` enum('accepted','pending') COLLATE utf8_unicode_ci DEFAULT NULL,
-  `accept_at` datetime DEFAULT NULL,
-  `created_at` datetime NOT NULL,
-  `updated_at` datetime NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `organization_entitlement_pack` (`organization_id`,`entitlement_pack_id`),
-  KEY `IDX_B4280C3732C8A3DE` (`organization_id`),
-  KEY `IDX_B4280C3746D6DBD6` (`entitlement_pack_id`),
-  CONSTRAINT `FK_B4280C3732C8A3DE` FOREIGN KEY (`organization_id`) REFERENCES `organization` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `FK_B4280C3746D6DBD6` FOREIGN KEY (`entitlement_pack_id`) REFERENCES `entitlement_pack` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=773 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -584,12 +584,12 @@ DROP TABLE IF EXISTS `service`;
 CREATE TABLE `service` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `hookKey` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `entityid` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `url` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `description` longtext COLLATE utf8_unicode_ci,
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
-  `min_loa` bigint(20) DEFAULT NULL,
   `org_name` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `org_short_name` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `org_url` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
@@ -600,7 +600,7 @@ CREATE TABLE `service` (
   `privacy_policy_set_at` datetime DEFAULT NULL,
   `enable_token` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `enabled` tinyint(1) DEFAULT NULL,
-  `hookKey` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `min_loa` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=104 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;

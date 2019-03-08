@@ -51,10 +51,10 @@ CREATE TABLE `attribute_value_organization` (
   `attribute_spec_id` bigint(20) DEFAULT NULL,
   `value` longblob,
   `is_default` tinyint(1) DEFAULT NULL,
-  `loa` bigint(20) DEFAULT NULL,
-  `loa_date` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
+  `loa` bigint(20) DEFAULT NULL,
+  `loa_date` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `organization_id_idx` (`organization_id`),
   KEY `attribute_spec_id_idx` (`attribute_spec_id`),
@@ -75,16 +75,34 @@ CREATE TABLE `attribute_value_principal` (
   `principal_id` bigint(20) DEFAULT NULL,
   `attribute_spec_id` bigint(20) DEFAULT NULL,
   `value` longblob,
-  `loa` bigint(20) DEFAULT NULL,
-  `loa_date` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
+  `loa` bigint(20) DEFAULT NULL,
+  `loa_date` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `principal_id_idx` (`principal_id`),
   KEY `attribute_spec_id_idx` (`attribute_spec_id`),
   CONSTRAINT `FK_81013BFF2113FD3F` FOREIGN KEY (`attribute_spec_id`) REFERENCES `attribute_spec` (`id`) ON DELETE CASCADE,
   CONSTRAINT `FK_81013BFF474870EE` FOREIGN KEY (`principal_id`) REFERENCES `principal` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `service_attribute_value_organization`
+--
+
+DROP TABLE IF EXISTS `service_attribute_value_organization`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `service_attribute_value_organization` (
+  `attributevalueorganization_id` bigint(20) NOT NULL,
+  `service_id` bigint(20) NOT NULL,
+  PRIMARY KEY (`attributevalueorganization_id`,`service_id`),
+  KEY `IDX_D586256626CBFBC2` (`attributevalueorganization_id`),
+  KEY `IDX_D5862566ED5CA9E6` (`service_id`),
+  CONSTRAINT `FK_D586256626CBFBC2` FOREIGN KEY (`attributevalueorganization_id`) REFERENCES `attribute_value_organization` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `FK_D5862566ED5CA9E6` FOREIGN KEY (`service_id`) REFERENCES `service` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -338,14 +356,14 @@ DROP TABLE IF EXISTS `organization`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `organization` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `default_role_id` bigint(20) DEFAULT NULL,
   `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
   `isolate_members` tinyint(1) DEFAULT NULL,
   `isolate_role_members` tinyint(1) DEFAULT NULL,
   `url` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `description` longtext COLLATE utf8_unicode_ci,
-  `created_at` datetime NOT NULL,
-  `updated_at` datetime NOT NULL,
+  `default_role_id` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`),
   UNIQUE KEY `UNIQ_C1EE637C248673E9` (`default_role_id`),
@@ -453,12 +471,12 @@ DROP TABLE IF EXISTS `principal`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `principal` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `token_id` bigint(20) DEFAULT NULL,
   `fedid` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `email` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `display_name` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
+  `token_id` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `fedid` (`fedid`),
   UNIQUE KEY `UNIQ_20A08C5B41DEE7B9` (`token_id`),
@@ -559,24 +577,24 @@ DROP TABLE IF EXISTS `service`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `service` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `logoPath` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `hookKey` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `entityid` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `url` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `description` longtext COLLATE utf8_unicode_ci,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
   `org_name` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `enable_token` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `org_short_name` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `org_url` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `org_description` longtext COLLATE utf8_unicode_ci,
   `priv_url` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `priv_description` longtext COLLATE utf8_unicode_ci,
+  `logoPath` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `privacy_policy_set_at` datetime DEFAULT NULL,
+  `enable_token` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `enabled` tinyint(1) DEFAULT NULL,
   `min_loa` bigint(20) DEFAULT NULL,
-  `privacy_policy_set_at` datetime DEFAULT NULL,
-  `created_at` datetime NOT NULL,
-  `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
@@ -603,24 +621,6 @@ CREATE TABLE `service_attribute_spec` (
   CONSTRAINT `FK_9880EE002113FD3F` FOREIGN KEY (`attribute_spec_id`) REFERENCES `attribute_spec` (`id`) ON DELETE CASCADE,
   CONSTRAINT `FK_9880EE00ED5CA9E6` FOREIGN KEY (`service_id`) REFERENCES `service` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `service_attribute_value_organization`
---
-
-DROP TABLE IF EXISTS `service_attribute_value_organization`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `service_attribute_value_organization` (
-  `attributevalueorganization_id` bigint(20) NOT NULL,
-  `service_id` bigint(20) NOT NULL,
-  PRIMARY KEY (`attributevalueorganization_id`,`service_id`),
-  KEY `IDX_D586256626CBFBC2` (`attributevalueorganization_id`),
-  KEY `IDX_D5862566ED5CA9E6` (`service_id`),
-  CONSTRAINT `FK_D586256626CBFBC2` FOREIGN KEY (`attributevalueorganization_id`) REFERENCES `attribute_value_organization` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `FK_D5862566ED5CA9E6` FOREIGN KEY (`service_id`) REFERENCES `service` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
