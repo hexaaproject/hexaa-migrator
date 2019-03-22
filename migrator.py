@@ -29,34 +29,45 @@ def main(argv=None):
 
     parser = argparse.ArgumentParser(description='HEXAA db migrator')
 
-    parser.add_argument('--old-host', '-oh', type=str,
-                        help='Address of old DB.')
-    parser.add_argument('--old-user', '-ou', type=str,
+    parser.add_argument('--old-host', '-oh', type=str, default='localhost',
+                        help='Address of old DB (default: %(default)s).')
+    parser.add_argument('--old-port', '-opo', type=int, default=3306,
+                        help='Port old DB (default: %(default)s)')
+    parser.add_argument('--old-user', '-ou', type=str, required=True,
                         help='User for old DB.')
-    parser.add_argument('--old-passwd', '-op', type=str,
+    parser.add_argument('--old-passwd', '-opw', type=str,
                         help='Password for old DB.')
     parser.add_argument('--old-db', '-od', type=str,
                         help='Database name for old DB.')
 
-    parser.add_argument('--new-host', '-nh', type=str,
-                        help='Address of new DB.')
+    parser.add_argument('--new-host', '-nh', type=str, default='localhost',
+                        help='Address of new DB. (default: %(default)s).')
+    parser.add_argument('--new-port', '-npo', type=int, default=3306,
+                        help='Port new DB (default: %(default)s).')
     parser.add_argument('--new-user', '-nu', type=str,
                         help='User for new DB.')
-    parser.add_argument('--new-passwd', '-np', type=str,
+    parser.add_argument('--new-passwd', '-npw', type=str,
                         help='Password for new DB.')
     parser.add_argument('--new-db', '-nd', type=str,
                         help='Database name for new DB.')
+
+    parser.add_argument('--old-prefix', type=str,
+                        help='Old entitlement URI prefix to be replaced.')
+    parser.add_argument('--new-prefix', type=str,
+                        help='New entitlement URI prefix.')
 
     args = parser.parse_args(argv)
 
     old_conf = dict(
         host=args.old_host,
+        port=args.old_port,
         user=args.old_user,
         passwd=args.old_passwd,
         database=args.old_db
     )
     new_conf = dict(
         host=args.new_host,
+        port=args.new_port,
         user=args.new_user,
         passwd=args.new_passwd,
         database=args.new_db
@@ -65,12 +76,18 @@ def main(argv=None):
     old_db = mysql.connector.connect(**old_conf)
     new_db = mysql.connector.connect(**new_conf)
 
-    migrate(old_db, new_db)
-
-    new_db.commit()
-
-    new_db.close()
-    old_db.close()
+    try:
+        migrate(old_db, new_db, args.old_prefix, args.new_prefix)
+    except Exception as ex:
+        print('Rolling back changes')
+        new_db.rollback()
+        raise ex
+    else:
+        print('Committing changes')
+        new_db.commit()
+    finally:
+        new_db.close()
+        old_db.close()
 
 
 #: List of tables that are copied directly, first element is the old table name,
@@ -79,7 +96,6 @@ EXACT_COPY = (
     ('attribute_spec', None),
     ('attribute_value_organization', None),
     ('attribute_value_principal', None),
-    ('entitlement', None),
     ('entitlement_pack', None),
     ('entitlement_pack_entitlement', None),
     ('hook', None),
@@ -110,7 +126,7 @@ EXACT_COPY = (
 )
 
 
-def migrate(old_db, new_db):
+def migrate(old_db, new_db, old_prefix=None, new_prefix=None):
     '''
     CHANGED:
         linker_token:
@@ -177,16 +193,41 @@ def migrate(old_db, new_db):
                 break
 
     # ----------------------
+    # replace entitlement URI prefixes
+
+    print('\nentitlement  -->  entitlement')
+    select = ('SELECT id, service_id, name, description, uri, created_at,'
+              ' updated_at FROM entitlement')
+    insert = ('INSERT INTO entitlement (id, service_id, name, description, uri,'
+              ' created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s)')
+
+    print('   ', select)
+    print('   ', insert)
+
+    old_cursor.execute(select)
+    data = old_cursor.fetchall()
+    for row in data:
+        uri = row[4]
+        if old_prefix and uri.startswith(old_prefix):
+            row = list(row)
+            row[4] = uri.replace(old_prefix, new_prefix, 1)
+        new_cursor.execute(insert, row)
+    print(f'    {len(data)} rows transformed\n')
+
+    # ----------------------
     # transform linked orgs and entitlement packs
 
     # notes:
     # - `accept_at` is discarded (there is no corresponding column for it in the
     #   new tables)
+    # - the group of organization_entitlement_pack rows that connect the same
+    #   service and org will be transformed into one Link and the same number of
+    #   link_entitlement_pack connections
     print('organization_entitlement_pack  -->  link, link_entitlement_pack')
 
     # this will cause an error if there are linked entitlements between one
-    # service and org with different statuses (in the new version, only one link
-    # is allowed)
+    # service and one org with different statuses (in the new version, only one
+    # link is allowed)
     select = ('SELECT'
               '   MIN(org_pack.id), organization_id, status,'
               '   MAX(org_pack.updated_at), MIN(org_pack.created_at),'
