@@ -8,6 +8,7 @@
         - [Creating databases](#creating-databases)
         - [Dependencies](#dependencies)
         - [Arguments](#arguments)
+        - [Docker](#docker)
     - [Details](#details)
         - [Entitlement URI update](#entitlement-uri-update)
         - [Link transformation](#link-transformation)
@@ -89,6 +90,22 @@ Example:
     -nu hexaa -npw hexaa -nd hexaa \
     --old-prefix 'urn:geant:niif.hu:hexaa' \
     --new-prefix 'urn:geant:hexaa.eu:hexaa'
+```
+
+### Docker
+
+For easier usage with the Ansible+Docker based HEXAA installation:
+
+```bash
+docker build -t migrator .
+
+docker stop hexaa-backend hexaa-frontend-web
+docker run \
+    -it --rm \
+    --network hexaa_backend \
+    -v /path/to/hexaadump_xy.sql:/hexaadump.sql \
+    migrator
+docker start hexaa-backend hexaa-frontend-web
 ```
 
 ## Details

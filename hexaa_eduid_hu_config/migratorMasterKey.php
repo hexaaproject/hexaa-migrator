@@ -41,30 +41,30 @@ class migratorMasterKey extends MasterKeyHook {
         $validActions = array(
             $entitlementPackControllerString . "getEntitlementpackTokenAction",
             $entitlementPackControllerString . "getServiceEntitlementpackAction",
-        
+
             $entitlementPackEntitlementControllerString . "getEntitlementsAction",
             $entitlementControllerString . "getServiceEntitlementAction",
-        
+
             $invitationControllerString . "getInvitationResendAction",
             $invitationControllerString . "getInvitationAction",
-            
+
             $organizationControllerString . "getAction",
-        
+
             $organizationChildControllerString . "cgetInvitationsAction",
-            
+
             $roleControllerString . "getOrganizationRoleAction",
-            
+
             $organizationChildControllerString . "getMembersAction",
             $organizationChildControllerString . "getEntitlementpacksTokenAction",
             $organizationChildControllerString . "cgetRolesAction",
-            
+
             $principalControllerString . "getPrincipalSelfAction",
-            
+
             $roleControllerString . "getRoleEntitlementAction",
             $roleControllerString . "getRolePrincipalAction",
-            
+
             $serviceChildControllerString . "cgetEntitlementpacksAction",
-            
+
             );
 
         return in_array($this->_controller, $validActions);
